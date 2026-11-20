@@ -1,0 +1,70 @@
+{
+  "DEV-003": {
+    "required_columns": [
+      "name",
+      "price"
+    ],
+    "optional_columns": [
+      "category"
+    ],
+    "semantic_rule": "Return all products with a price greater than 100.",
+    "review_status": "approved",
+    "notes": "The question does not explicitly request category or sorting."
+  },
+  "DEV-009": {
+    "required_columns": [
+      "name"
+    ],
+    "optional_columns": [
+      "order_count"
+    ],
+    "semantic_rule": "Return customers who have placed more than one order.",
+    "review_status": "approved",
+    "notes": "The order count is useful but is not explicitly requested."
+  },
+  "DEV-011": {
+    "required_columns": [
+      "order_id",
+      "order_date",
+      "total"
+    ],
+    "optional_columns": [
+      "customer_id"
+    ],
+    "semantic_rule": "Return orders placed after January 31, 2026.",
+    "review_status": "approved",
+    "notes": "An additional customer_id column should not automatically make the answer incorrect."
+  },
+  "DEV-013": {
+    "required_columns": [
+      "name"
+    ],
+    "optional_columns": [
+      "product_id"
+    ],
+    "semantic_rule": "Return products that have never been ordered.",
+    "review_status": "approved",
+    "notes": "NOT EXISTS and LEFT JOIN IS NULL can be logically equivalent."
+  },
+  "DEV-020": {
+    "required_columns": [
+      "name"
+    ],
+    "optional_columns": [
+      "customer_id"
+    ],
+    "semantic_rule": "Return customers who purchased at least one Electronics product.",
+    "review_status": "approved",
+    "notes": "An additional customer_id column should not automatically make the answer incorrect."
+  },
+  "DEV-021": {
+    "required_columns": [
+      "name",
+      "order_count"
+    ],
+    "optional_columns": [],
+    "semantic_rule": "Return every customer and their number of orders in February 2026, including customers with zero orders.",
+    "review_status": "rejected",
+    "notes": "An INNER JOIN with a date filter in WHERE may incorrectly exclude customers with zero February orders."
+  }
+}

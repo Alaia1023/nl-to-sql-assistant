@@ -1,0 +1,135 @@
+{
+  "domain": "Financial Services and Asset Management",
+  "description": "Synthetic financial database for fund, portfolio, securities, positions, transactions and NAV analysis.",
+  "currency_policy": {
+    "rule": "Do not aggregate monetary values across different currencies unless an explicit currency conversion mechanism is available.",
+    "note": "The current prototype does not implement foreign exchange conversion."
+  },
+  "definitions": {
+    "Fund": {
+      "meaning": "An investment fund that pools capital from investors and follows a defined investment strategy.",
+      "table": "funds"
+    },
+    "Portfolio": {
+      "meaning": "A collection of investment positions managed under a specific mandate and associated with a fund.",
+      "table": "portfolios"
+    },
+    "Security": {
+      "meaning": "A financial instrument such as an equity or bond.",
+      "table": "securities"
+    },
+    "Position": {
+      "meaning": "A portfolio holding in a specific security at a particular valuation date.",
+      "table": "positions"
+    },
+    "Market Value": {
+      "meaning": "The monetary value of a security holding at a given valuation date.",
+      "formula": "positions.market_value",
+      "alternative_calculation": "positions.quantity * positions.market_price"
+    },
+    "Portfolio Exposure": {
+      "meaning": "The percentage of a portfolio's total market value invested in a particular security or sector.",
+      "formula": "Security market value / Total portfolio market value * 100",
+      "date_rule": "Use positions.as_of_date to select the valuation date."
+    },
+    "Trading Volume": {
+      "meaning": "The total quantity of securities traded during a specified period.",
+      "formula": "SUM(transactions.quantity)",
+      "note": "This measures units traded, not monetary trading value."
+    },
+    "Trading Value": {
+      "meaning": "The monetary value of executed trades during a specified period.",
+      "formula": "SUM(transactions.quantity * transactions.price)",
+      "note": "This is a gross traded value and excludes transaction fees."
+    },
+    "NAV": {
+      "full_name": "Net Asset Value",
+      "meaning": "The net value of a fund's assets after liabilities. In this synthetic dataset, total_nav is stored directly.",
+      "table": "nav_history",
+      "important_distinction": "NAV per share is not the same as total NAV."
+    },
+    "NAV per Share": {
+      "meaning": "The net asset value attributable to one fund share.",
+      "column": "nav_history.nav_per_share"
+    },
+    "Total NAV": {
+      "meaning": "The total net asset value of a fund on a given date.",
+      "column": "nav_history.total_nav"
+    },
+    "AUM": {
+      "full_name": "Assets Under Management",
+      "meaning": "The total market value of assets managed for investors.",
+      "prototype_rule": "Use nav_history.total_nav as the fund-level proxy for assets under management in this synthetic dataset.",
+      "caution": "Do not treat portfolio position market value as fund AUM without an explicit business definition."
+    },
+    "Fund Performance": {
+      "meaning": "The percentage change in NAV per share between two valuation dates.",
+      "formula": "(Ending NAV per share - Beginning NAV per share) / Beginning NAV per share * 100",
+      "note": "This is a simple NAV return and does not account for distributions or investor cash flows."
+    }
+  },
+  "business_rules": [
+    "Join portfolios to funds using portfolios.fund_id = funds.fund_id.",
+    "Join positions to portfolios using positions.portfolio_id = portfolios.portfolio_id.",
+    "Join positions to securities using positions.security_id = securities.security_id.",
+    "Join transactions to portfolios using transactions.portfolio_id = portfolios.portfolio_id.",
+    "Join transactions to securities using transactions.security_id = securities.security_id.",
+    "Join NAV history to funds using nav_history.fund_id = funds.fund_id.",
+    "Use positions.as_of_date when the question specifies a holdings valuation date.",
+    "Use transactions.transaction_date when the question specifies a trading period.",
+    "Use nav_history.nav_date when the question specifies a NAV valuation date.",
+    "When calculating portfolio exposure, calculate the denominator from positions belonging to the same portfolio and the same valuation date.",
+    "Do not combine positions from different valuation dates in a single portfolio exposure calculation.",
+    "Use nav_history.nav_per_share for NAV per share questions.",
+    "Use nav_history.total_nav for total NAV or fund AUM proxy questions.",
+    "Use transactions.quantity for trading volume.",
+    "Use transactions.quantity * transactions.price for gross trading value.",
+    "Do not automatically add transaction fees to gross trading value.",
+    "For BUY and SELL analysis, use transactions.transaction_type.",
+    "Do not assume that BUY and SELL transactions have the same effect on holdings.",
+    "Do not aggregate monetary amounts across different currencies without an explicit FX conversion.",
+    "When a question asks for the latest position, identify the maximum applicable positions.as_of_date before aggregating.",
+    "When a question asks for the latest NAV, identify the maximum applicable nav_history.nav_date for each fund.",
+    "Use GROUP BY when calculating totals or averages for each fund, portfolio, security or sector.",
+    "Use INNER JOIN when only records with matching related entities are required.",
+    "Use LEFT JOIN when the question explicitly requires retaining entities with no related records."
+  ],
+  "relationships": [
+    {
+      "from": "funds",
+      "to": "portfolios",
+      "key": "fund_id",
+      "cardinality": "one-to-many"
+    },
+    {
+      "from": "funds",
+      "to": "nav_history",
+      "key": "fund_id",
+      "cardinality": "one-to-many"
+    },
+    {
+      "from": "portfolios",
+      "to": "positions",
+      "key": "portfolio_id",
+      "cardinality": "one-to-many"
+    },
+    {
+      "from": "securities",
+      "to": "positions",
+      "key": "security_id",
+      "cardinality": "one-to-many"
+    },
+    {
+      "from": "portfolios",
+      "to": "transactions",
+      "key": "portfolio_id",
+      "cardinality": "one-to-many"
+    },
+    {
+      "from": "securities",
+      "to": "transactions",
+      "key": "security_id",
+      "cardinality": "one-to-many"
+    }
+  ]
+}

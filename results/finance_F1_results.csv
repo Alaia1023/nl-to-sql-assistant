@@ -1,0 +1,127 @@
+id,question,strategy,generated_sql,gold_sql,valid,executed,correct,generation_time,error
+FIN-001,"List all funds with their names, strategies and currencies.",F1,"SELECT fund_name, strategy, currency FROM funds;","SELECT fund_name, strategy, currency FROM funds ORDER BY fund_id;",True,True,True,0.4104,
+FIN-002,List all portfolios with their fund names and base currencies.,F1,"SELECT p.portfolio_id, p.portfolio_name, f.fund_name, p.base_currency
+FROM portfolios p
+JOIN funds f ON p.fund_id = f.fund_id;","SELECT p.portfolio_name, f.fund_name, p.base_currency FROM portfolios p JOIN funds f ON p.fund_id = f.fund_id ORDER BY p.portfolio_id;",True,True,False,0.556,
+FIN-003,"List all securities with their tickers, names, asset classes and sectors.",F1,"SELECT ticker, security_name, asset_class, sector FROM securities;","SELECT ticker, security_name, asset_class, sector FROM securities ORDER BY ticker;",True,True,False,0.7136,
+FIN-004,"Show the total market value of each portfolio on October 31, 2026, together with its currency.",F1,"SELECT
+    p.portfolio_id,
+    p.portfolio_name,
+    COALESCE(SUM(pos.market_value), 0) AS total_market_value,
+    p.base_currency
+FROM
+    portfolios p
+LEFT JOIN
+    positions pos
+    ON pos.portfolio_id = p.portfolio_id
+    AND pos.as_of_date = '2026-10-31'
+GROUP BY
+    p.portfolio_id,
+    p.portfolio_name,
+    p.base_currency;","SELECT p.portfolio_name, p.base_currency, SUM(pos.market_value) AS total_market_value FROM portfolios p JOIN positions pos ON p.portfolio_id = pos.portfolio_id WHERE pos.as_of_date = '2026-10-31' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,False,0.6413,
+FIN-005,"Calculate the percentage exposure of each security within Global Equity Portfolio A on October 31, 2026. Show the ticker, market value and exposure percentage.",F1,"SELECT s.ticker,
+       p.market_value,
+       100.0 * p.market_value / pv.total_market_value AS exposure_percentage
+FROM positions p
+JOIN portfolios po ON p.portfolio_id = po.portfolio_id
+JOIN securities s ON p.security_id = s.security_id
+JOIN (
+    SELECT portfolio_id,
+           as_of_date,
+           SUM(market_value) AS total_market_value
+    FROM positions
+    WHERE as_of_date = '2026-10-31'
+    GROUP BY portfolio_id, as_of_date
+) pv ON p.portfolio_id = pv.portfolio_id
+   AND p.as_of_date = pv.as_of_date
+WHERE po.portfolio_name = 'Global Equity Portfolio A'
+  AND p.as_of_date = '2026-10-31';","SELECT s.ticker, pos.market_value, ROUND(100.0 * pos.market_value / SUM(pos.market_value) OVER (PARTITION BY pos.portfolio_id, pos.as_of_date), 2) AS exposure_percentage FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY exposure_percentage DESC;",True,True,False,1.056,
+FIN-006,"Show the three securities with the highest market values in Global Equity Portfolio A on October 31, 2026.",F1,"SELECT s.ticker, s.security_name, p.market_value
+FROM portfolios p0
+JOIN positions p ON p.portfolio_id = p0.portfolio_id
+JOIN securities s ON s.security_id = p.security_id
+WHERE p0.portfolio_name = 'Global Equity Portfolio A'
+  AND p.as_of_date = '2026-10-31'
+ORDER BY p.market_value DESC
+LIMIT 3;","SELECT s.ticker, pos.market_value FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY pos.market_value DESC LIMIT 3;",True,True,False,1.3161,
+FIN-007,Calculate the total gross trading volume and total gross trading value for each portfolio during October 2026. Show the portfolio name and currency.,F1,"SELECT p.portfolio_name, p.base_currency,
+       COALESCE(SUM(ABS(t.quantity)),0) AS total_gross_volume,
+       COALESCE(SUM(ABS(t.quantity) * t.price),0) AS total_gross_value
+FROM portfolios p
+LEFT JOIN transactions t
+  ON p.portfolio_id = t.portfolio_id
+  AND t.transaction_date >= '2026-10-01'
+  AND t.transaction_date <= '2026-10-31'
+GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency;","SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS total_trading_volume, SUM(t.quantity * t.price) AS total_trading_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,True,1.6005,
+FIN-008,Calculate the total BUY quantity and trading value for each portfolio during October 2026.,F1,"SELECT p.portfolio_id,
+       p.portfolio_name,
+       SUM(t.quantity) AS total_buy_quantity,
+       SUM(t.quantity * t.price) AS total_buy_value
+FROM transactions t
+JOIN portfolios p ON t.portfolio_id = p.portfolio_id
+WHERE t.transaction_type = 'BUY'
+  AND t.transaction_date >= '2026-10-01'
+  AND t.transaction_date <= '2026-10-31'
+GROUP BY p.portfolio_id, p.portfolio_name;","SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS buy_volume, SUM(t.quantity * t.price) AS buy_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'BUY' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,False,0.644,
+FIN-009,Calculate the total SELL quantity and trading value for each portfolio during October 2026.,F1,,"SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS sell_volume, SUM(t.quantity * t.price) AS sell_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'SELL' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6540, Requested 1540. Please try again in 600ms. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-010,"Show the latest NAV per share and total NAV for each fund, together with its currency and NAV date.",F1,"SELECT f.fund_id,
+       f.fund_name,
+       f.currency,
+       nh.nav_date,
+       nh.nav_per_share,
+       nh.total_nav
+FROM funds f
+JOIN nav_history nh ON f.fund_id = nh.fund_id
+WHERE nh.nav_date = (
+    SELECT MAX(nav_date)
+    FROM nav_history nh2
+    WHERE nh2.fund_id = f.fund_id
+);","SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = (SELECT MAX(nh2.nav_date) FROM nav_history nh2 WHERE nh2.fund_id = f.fund_id) ORDER BY f.fund_id;",True,True,False,0.7406,
+FIN-011,"Show the NAV per share and total NAV of every fund on September 30, 2026.",F1,"SELECT funds.fund_name, nav_history.nav_per_share, nav_history.total_nav
+FROM funds
+JOIN nav_history ON funds.fund_id = nav_history.fund_id
+WHERE nav_history.nav_date = '2026-09-30';","SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = '2026-09-30' ORDER BY f.fund_id;",True,True,False,8.4462,
+FIN-012,"Calculate the percentage change in NAV per share for each fund between September 30 and October 31, 2026.",F1,"SELECT
+    f.fund_id,
+    f.fund_name,
+    100.0 * (oct.nav_per_share - sep.nav_per_share) / sep.nav_per_share AS percent_change
+FROM
+    funds f
+JOIN
+    nav_history sep
+    ON f.fund_id = sep.fund_id
+    AND sep.nav_date = '2026-09-30'
+JOIN
+    nav_history oct
+    ON f.fund_id = oct.fund_id
+    AND oct.nav_date = '2026-10-31';","SELECT f.fund_name, f.currency, ROUND(100.0 * (oct.nav_per_share - sep.nav_per_share) / sep.nav_per_share, 2) AS nav_per_share_return_percentage FROM funds f JOIN nav_history sep ON f.fund_id = sep.fund_id JOIN nav_history oct ON f.fund_id = oct.fund_id WHERE sep.nav_date = '2026-09-30' AND oct.nav_date = '2026-10-31' ORDER BY f.fund_id;",True,True,False,3.9332,
+FIN-013,Count the number of BUY and SELL transactions for each portfolio during October 2026.,F1,"SELECT
+    portfolio_id,
+    transaction_type,
+    COUNT(*) AS transaction_count
+FROM
+    transactions
+WHERE
+    transaction_date BETWEEN '2026-10-01' AND '2026-10-31'
+GROUP BY
+    portfolio_id,
+    transaction_type;","SELECT p.portfolio_name, t.transaction_type, COUNT(*) AS transaction_count FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, t.transaction_type ORDER BY p.portfolio_id, t.transaction_type;",True,True,False,3.0869,
+FIN-014,List all securities that have never appeared in any portfolio position.,F1,"SELECT s.security_id, s.ticker, s.security_name, s.asset_class, s.sector, s.currency
+FROM securities s
+LEFT JOIN positions p ON s.security_id = p.security_id
+WHERE p.security_id IS NULL;","SELECT s.ticker, s.security_name FROM securities s WHERE NOT EXISTS (SELECT 1 FROM positions p WHERE p.security_id = s.security_id) ORDER BY s.ticker;",True,True,False,10.0739,
+FIN-015,"Calculate the percentage exposure of each sector within Global Equity Portfolio A on October 31, 2026. Show the sector and exposure percentage.",F1,"SELECT s.sector,
+       100.0 * SUM(p.market_value) / total.total_market_value AS exposure_percentage
+FROM positions p
+JOIN portfolios pr ON p.portfolio_id = pr.portfolio_id
+JOIN securities s ON p.security_id = s.security_id
+JOIN (
+    SELECT SUM(p2.market_value) AS total_market_value
+    FROM positions p2
+    JOIN portfolios pr2 ON p2.portfolio_id = pr2.portfolio_id
+    WHERE pr2.portfolio_name = 'Global Equity Portfolio A'
+      AND p2.as_of_date = '2026-10-31'
+) total ON 1=1
+WHERE pr.portfolio_name = 'Global Equity Portfolio A'
+  AND p.as_of_date = '2026-10-31'
+GROUP BY s.sector;","WITH sector_values AS (SELECT s.sector, SUM(pos.market_value) AS sector_market_value, pos.portfolio_id, pos.as_of_date FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' GROUP BY s.sector, pos.portfolio_id, pos.as_of_date) SELECT sector, ROUND(100.0 * sector_market_value / SUM(sector_market_value) OVER (PARTITION BY portfolio_id, as_of_date), 2) AS exposure_percentage FROM sector_values ORDER BY exposure_percentage DESC;",True,True,False,3.8037,

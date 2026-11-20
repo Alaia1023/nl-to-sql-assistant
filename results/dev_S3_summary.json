@@ -1,0 +1,10 @@
+[
+    {
+        "strategy": "S3",
+        "total_questions": 25,
+        "valid_sql_rate": 1.0,
+        "execution_success_rate": 1.0,
+        "execution_accuracy": 0.76,
+        "average_generation_time_seconds": 3.0113
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "strategy": "S0",
+        "total_questions": 25,
+        "valid_sql_rate": 1.0,
+        "execution_success_rate": 1.0,
+        "execution_accuracy": 0.48,
+        "average_generation_time_seconds": 0.445
+    },
+    {
+        "strategy": "S1",
+        "total_questions": 25,
+        "valid_sql_rate": 1.0,
+        "execution_success_rate": 1.0,
+        "execution_accuracy": 0.44,
+        "average_generation_time_seconds": 2.4438
+    },
+    {
+        "strategy": "S2",
+        "total_questions": 25,
+        "valid_sql_rate": 1.0,
+        "execution_success_rate": 1.0,
+        "execution_accuracy": 0.76,
+        "average_generation_time_seconds": 3.3322
+    }
+]

@@ -1,0 +1,11 @@
+{
+  "strategy": "F2",
+  "total_questions": 15,
+  "valid_sql_count": 9,
+  "valid_sql_rate": 0.6,
+  "execution_success_count": 9,
+  "execution_success_rate": 0.6,
+  "correct_count": 7,
+  "exact_execution_accuracy": 0.4667,
+  "average_generation_time": 11.5603
+}

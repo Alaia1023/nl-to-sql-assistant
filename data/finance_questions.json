@@ -1,0 +1,122 @@
+[
+  {
+    "id": "FIN-001",
+    "question": "List all funds with their names, strategies and currencies.",
+    "gold_sql": "SELECT fund_name, strategy, currency FROM funds ORDER BY fund_id;",
+    "category": "fund_information",
+    "difficulty": "easy",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-002",
+    "question": "List all portfolios with their fund names and base currencies.",
+    "gold_sql": "SELECT p.portfolio_name, f.fund_name, p.base_currency FROM portfolios p JOIN funds f ON p.fund_id = f.fund_id ORDER BY p.portfolio_id;",
+    "category": "portfolio_information",
+    "difficulty": "easy",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-003",
+    "question": "List all securities with their tickers, names, asset classes and sectors.",
+    "gold_sql": "SELECT ticker, security_name, asset_class, sector FROM securities ORDER BY ticker;",
+    "category": "security_information",
+    "difficulty": "easy",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-004",
+    "question": "Show the total market value of each portfolio on October 31, 2026, together with its currency.",
+    "gold_sql": "SELECT p.portfolio_name, p.base_currency, SUM(pos.market_value) AS total_market_value FROM portfolios p JOIN positions pos ON p.portfolio_id = pos.portfolio_id WHERE pos.as_of_date = '2026-10-31' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",
+    "category": "portfolio_valuation",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-005",
+    "question": "Calculate the percentage exposure of each security within Global Equity Portfolio A on October 31, 2026. Show the ticker, market value and exposure percentage.",
+    "gold_sql": "SELECT s.ticker, pos.market_value, ROUND(100.0 * pos.market_value / SUM(pos.market_value) OVER (PARTITION BY pos.portfolio_id, pos.as_of_date), 2) AS exposure_percentage FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY exposure_percentage DESC;",
+    "category": "portfolio_exposure",
+    "difficulty": "hard",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-006",
+    "question": "Show the three securities with the highest market values in Global Equity Portfolio A on October 31, 2026.",
+    "gold_sql": "SELECT s.ticker, pos.market_value FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY pos.market_value DESC LIMIT 3;",
+    "category": "portfolio_valuation",
+    "difficulty": "medium",
+    "order_sensitive": true
+  },
+  {
+    "id": "FIN-007",
+    "question": "Calculate the total gross trading volume and total gross trading value for each portfolio during October 2026. Show the portfolio name and currency.",
+    "gold_sql": "SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS total_trading_volume, SUM(t.quantity * t.price) AS total_trading_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",
+    "category": "trading_activity",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-008",
+    "question": "Calculate the total BUY quantity and trading value for each portfolio during October 2026. Show the portfolio name, base currency, total BUY quantity and trading value.",
+    "gold_sql": "SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS buy_volume, SUM(t.quantity * t.price) AS buy_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'BUY' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",
+    "category": "trading_activity",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-009",
+    "question": "Calculate the total SELL quantity and trading value for each portfolio during October 2026. Show the portfolio name, base currency, total SELL quantity and trading value.",
+    "gold_sql": "SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS sell_volume, SUM(t.quantity * t.price) AS sell_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'SELL' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",
+    "category": "trading_activity",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-010",
+    "question": "Show the latest NAV per share and total NAV for each fund. Include the fund name, currency and NAV date.",
+    "gold_sql": "SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = (SELECT MAX(nh2.nav_date) FROM nav_history nh2 WHERE nh2.fund_id = f.fund_id) ORDER BY f.fund_id;",
+    "category": "nav_analysis",
+    "difficulty": "hard",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-011",
+    "question": "Show the NAV per share and total NAV of every fund on September 30, 2026.",
+    "gold_sql": "SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = '2026-09-30' ORDER BY f.fund_id;",
+    "category": "nav_analysis",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-012",
+    "question": "Calculate the percentage change in NAV per share for each fund between September 30 and October 31, 2026. Show the fund name, currency and percentage change.",
+    "gold_sql": "SELECT f.fund_name, f.currency, ROUND(100.0 * (oct.nav_per_share - sep.nav_per_share) / sep.nav_per_share, 2) AS nav_per_share_return_percentage FROM funds f JOIN nav_history sep ON f.fund_id = sep.fund_id JOIN nav_history oct ON f.fund_id = oct.fund_id WHERE sep.nav_date = '2026-09-30' AND oct.nav_date = '2026-10-31' ORDER BY f.fund_id;",
+    "category": "fund_performance",
+    "difficulty": "hard",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-013",
+    "question": "Count the number of BUY and SELL transactions for each portfolio during October 2026.",
+    "gold_sql": "SELECT p.portfolio_name, t.transaction_type, COUNT(*) AS transaction_count FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, t.transaction_type ORDER BY p.portfolio_id, t.transaction_type;",
+    "category": "trading_activity",
+    "difficulty": "medium",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-014",
+    "question": "List all securities that have never appeared in any portfolio position.",
+    "gold_sql": "SELECT s.ticker, s.security_name FROM securities s WHERE NOT EXISTS (SELECT 1 FROM positions p WHERE p.security_id = s.security_id) ORDER BY s.ticker;",
+    "category": "security_analysis",
+    "difficulty": "hard",
+    "order_sensitive": false
+  },
+  {
+    "id": "FIN-015",
+    "question": "Calculate the percentage exposure of each sector within Global Equity Portfolio A on October 31, 2026. Show the sector and exposure percentage.",
+    "gold_sql": "WITH sector_values AS (SELECT s.sector, SUM(pos.market_value) AS sector_market_value, pos.portfolio_id, pos.as_of_date FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' GROUP BY s.sector, pos.portfolio_id, pos.as_of_date) SELECT sector, ROUND(100.0 * sector_market_value / SUM(sector_market_value) OVER (PARTITION BY portfolio_id, as_of_date), 2) AS exposure_percentage FROM sector_values ORDER BY exposure_percentage DESC;",
+    "category": "sector_exposure",
+    "difficulty": "hard",
+    "order_sensitive": false
+  }
+]

@@ -1,0 +1,99 @@
+id,question,strategy,generated_sql,gold_sql,valid,executed,correct,generation_time,error
+FIN-001,"List all funds with their names, strategies and currencies.",F2,"SELECT fund_name, strategy, currency FROM funds;","SELECT fund_name, strategy, currency FROM funds ORDER BY fund_id;",True,True,True,0.6911,
+FIN-002,List all portfolios with their fund names and base currencies.,F2,"SELECT portfolios.portfolio_name, funds.fund_name, portfolios.base_currency
+FROM portfolios
+JOIN funds ON portfolios.fund_id = funds.fund_id;","SELECT p.portfolio_name, f.fund_name, p.base_currency FROM portfolios p JOIN funds f ON p.fund_id = f.fund_id ORDER BY p.portfolio_id;",True,True,True,0.4516,
+FIN-003,"List all securities with their tickers, names, asset classes and sectors.",F2,"SELECT ticker, security_name, asset_class, sector FROM securities;","SELECT ticker, security_name, asset_class, sector FROM securities ORDER BY ticker;",True,True,True,0.5417,
+FIN-004,"Show the total market value of each portfolio on October 31, 2026, together with its currency.",F2,"SELECT
+    portfolios.portfolio_name,
+    portfolios.base_currency,
+    SUM(positions.market_value) AS total_market_value
+FROM
+    portfolios
+INNER JOIN
+    positions
+    ON positions.portfolio_id = portfolios.portfolio_id
+WHERE
+    positions.as_of_date = '2026-10-31'
+GROUP BY
+    portfolios.portfolio_id,
+    portfolios.portfolio_name,
+    portfolios.base_currency;","SELECT p.portfolio_name, p.base_currency, SUM(pos.market_value) AS total_market_value FROM portfolios p JOIN positions pos ON p.portfolio_id = pos.portfolio_id WHERE pos.as_of_date = '2026-10-31' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,True,12.9799,
+FIN-005,"Calculate the percentage exposure of each security within Global Equity Portfolio A on October 31, 2026. Show the ticker, market value and exposure percentage.",F2,"SELECT
+    securities.ticker,
+    positions.market_value,
+    ROUND(100.0 * positions.market_value / total_mv.total_market_value, 2) AS exposure_percentage
+FROM
+    positions
+INNER JOIN
+    portfolios ON positions.portfolio_id = portfolios.portfolio_id
+INNER JOIN
+    securities ON positions.security_id = securities.security_id
+INNER JOIN
+    (SELECT
+         portfolio_id,
+         as_of_date,
+         SUM(market_value) AS total_market_value
+     FROM positions
+     WHERE as_of_date = '2026-10-31'
+     GROUP BY portfolio_id, as_of_date) AS total_mv
+    ON positions.portfolio_id = total_mv.portfolio_id
+    AND positions.as_of_date = total_mv.as_of_date
+WHERE
+    portfolios.portfolio_name = 'Global Equity Portfolio A'
+    AND positions.as_of_date = '2026-10-31';","SELECT s.ticker, pos.market_value, ROUND(100.0 * pos.market_value / SUM(pos.market_value) OVER (PARTITION BY pos.portfolio_id, pos.as_of_date), 2) AS exposure_percentage FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY exposure_percentage DESC;",True,True,True,21.1304,
+FIN-006,"Show the three securities with the highest market values in Global Equity Portfolio A on October 31, 2026.",F2,"SELECT securities.ticker, positions.market_value
+FROM positions
+JOIN portfolios ON positions.portfolio_id = portfolios.portfolio_id
+JOIN securities ON positions.security_id = securities.security_id
+WHERE portfolios.portfolio_name = 'Global Equity Portfolio A'
+  AND positions.as_of_date = '2026-10-31'
+ORDER BY positions.market_value DESC
+LIMIT 3;","SELECT s.ticker, pos.market_value FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' ORDER BY pos.market_value DESC LIMIT 3;",True,True,True,19.2241,
+FIN-007,Calculate the total gross trading volume and total gross trading value for each portfolio during October 2026. Show the portfolio name and currency.,F2,"SELECT
+    portfolios.portfolio_name,
+    portfolios.base_currency,
+    SUM(transactions.quantity) AS total_volume,
+    SUM(transactions.quantity * transactions.price) AS total_value
+FROM
+    portfolios
+INNER JOIN
+    transactions
+    ON portfolios.portfolio_id = transactions.portfolio_id
+WHERE
+    transactions.transaction_date >= '2026-10-01'
+    AND transactions.transaction_date <= '2026-10-31'
+GROUP BY
+    portfolios.portfolio_id,
+    portfolios.portfolio_name,
+    portfolios.base_currency;","SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS total_trading_volume, SUM(t.quantity * t.price) AS total_trading_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,True,8.9039,
+FIN-008,Calculate the total BUY quantity and trading value for each portfolio during October 2026.,F2,"SELECT
+    portfolios.portfolio_name,
+    SUM(transactions.quantity) AS total_buy_quantity,
+    SUM(transactions.quantity * transactions.price) AS total_buy_value
+FROM
+    transactions
+INNER JOIN
+    portfolios
+    ON transactions.portfolio_id = portfolios.portfolio_id
+WHERE
+    transactions.transaction_type = 'BUY'
+    AND transactions.transaction_date >= '2026-10-01'
+    AND transactions.transaction_date <= '2026-10-31'
+GROUP BY
+    portfolios.portfolio_name;","SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS buy_volume, SUM(t.quantity * t.price) AS buy_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'BUY' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,False,20.064,
+FIN-009,Calculate the total SELL quantity and trading value for each portfolio during October 2026.,F2,"SELECT p.portfolio_name,
+       SUM(t.quantity) AS total_sell_quantity,
+       SUM(t.quantity * t.price) AS total_sell_value
+FROM transactions t
+JOIN portfolios p ON t.portfolio_id = p.portfolio_id
+WHERE t.transaction_type = 'SELL'
+  AND t.transaction_date >= '2026-10-01'
+  AND t.transaction_date <= '2026-10-31'
+GROUP BY p.portfolio_id, p.portfolio_name;","SELECT p.portfolio_name, p.base_currency, SUM(t.quantity) AS sell_volume, SUM(t.quantity * t.price) AS sell_value FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_type = 'SELL' AND t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, p.base_currency ORDER BY p.portfolio_id;",True,True,False,20.0563,
+FIN-010,"Show the latest NAV per share and total NAV for each fund. Include the fund name, currency and NAV date.",F2,,"SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = (SELECT MAX(nh2.nav_date) FROM nav_history nh2 WHERE nh2.fund_id = f.fund_id) ORDER BY f.fund_id;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198544, Requested 2806. Please try again in 9m43.2s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-011,"Show the NAV per share and total NAV of every fund on September 30, 2026.",F2,,"SELECT f.fund_name, f.currency, nh.nav_date, nh.nav_per_share, nh.total_nav FROM funds f JOIN nav_history nh ON f.fund_id = nh.fund_id WHERE nh.nav_date = '2026-09-30' ORDER BY f.fund_id;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198544, Requested 2858. Please try again in 10m5.664s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-012,"Calculate the percentage change in NAV per share for each fund between September 30 and October 31, 2026. Show the fund name, currency and percentage change.",F2,,"SELECT f.fund_name, f.currency, ROUND(100.0 * (oct.nav_per_share - sep.nav_per_share) / sep.nav_per_share, 2) AS nav_per_share_return_percentage FROM funds f JOIN nav_history sep ON f.fund_id = sep.fund_id JOIN nav_history oct ON f.fund_id = oct.fund_id WHERE sep.nav_date = '2026-09-30' AND oct.nav_date = '2026-10-31' ORDER BY f.fund_id;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198544, Requested 2872. Please try again in 10m11.712s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-013,Count the number of BUY and SELL transactions for each portfolio during October 2026.,F2,,"SELECT p.portfolio_name, t.transaction_type, COUNT(*) AS transaction_count FROM portfolios p JOIN transactions t ON p.portfolio_id = t.portfolio_id WHERE t.transaction_date >= '2026-10-01' AND t.transaction_date < '2026-11-01' GROUP BY p.portfolio_id, p.portfolio_name, t.transaction_type ORDER BY p.portfolio_id, t.transaction_type;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198544, Requested 2813. Please try again in 9m46.224s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-014,List all securities that have never appeared in any portfolio position.,F2,,"SELECT s.ticker, s.security_name FROM securities s WHERE NOT EXISTS (SELECT 1 FROM positions p WHERE p.security_id = s.security_id) ORDER BY s.ticker;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198544, Requested 2795. Please try again in 9m38.448s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+FIN-015,"Calculate the percentage exposure of each sector within Global Equity Portfolio A on October 31, 2026. Show the sector and exposure percentage.",F2,,"WITH sector_values AS (SELECT s.sector, SUM(pos.market_value) AS sector_market_value, pos.portfolio_id, pos.as_of_date FROM positions pos JOIN portfolios p ON pos.portfolio_id = p.portfolio_id JOIN securities s ON pos.security_id = s.security_id WHERE p.portfolio_name = 'Global Equity Portfolio A' AND pos.as_of_date = '2026-10-31' GROUP BY s.sector, pos.portfolio_id, pos.as_of_date) SELECT sector, ROUND(100.0 * sector_market_value / SUM(sector_market_value) OVER (PARTITION BY portfolio_id, as_of_date), 2) AS exposure_percentage FROM sector_values ORDER BY exposure_percentage DESC;",False,False,False,,"RateLimitError: Error code: 429 - Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m52ayes4et1tzxd5kej3kfpt` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198543, Requested 2824. Please try again in 9m50.544s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
