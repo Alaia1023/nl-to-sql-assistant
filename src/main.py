@@ -1,31 +1,98 @@
+import time
+
+from src.audit_logger import write_audit_log
 from src.sql_generator import generate_sql
+from src.sql_safety import validate_read_only_sql
 from src.query_executor import execute_sql
 
 
-def run_assistant(question):
-    print("\nGenerating SQL...")
-    sql = generate_sql(question)
+def run_assistant(question, strategy="S2"):
+    sql = None
+    generation_time_ms = None
+    execution_time_ms = None
+    validation_status = "not_run"
+    execution_status = "not_run"
+    returned_rows = None
 
-    print("\nGenerated SQL:")
-    print(sql)
+    try:
+        print("\nGenerating SQL...")
 
-    print("\nValidating and executing SQL...")
+        generation_start = time.perf_counter()
+        try:
+            sql = generate_sql(question, strategy=strategy)
+        finally:
+            generation_time_ms = (
+                time.perf_counter() - generation_start
+            ) * 1000
 
-    result = execute_sql(sql)
+        print("\nGenerated SQL:")
+        print(sql)
 
-    print("\nQuery Results:")
-    print("-" * 60)
+        print("\nValidating and executing SQL...")
 
-    print(" | ".join(result["columns"]))
-    print("-" * 60)
+        validate_read_only_sql(sql)
+        validation_status = "passed"
 
-    for row in result["rows"]:
-        print(" | ".join(str(value) for value in row))
+        execution_start = time.perf_counter()
+        try:
+            result = execute_sql(sql)
+        finally:
+            execution_time_ms = (
+                time.perf_counter() - execution_start
+            ) * 1000
 
-    if result["truncated"]:
-        print("\nOnly the first 100 rows are displayed.")
+        execution_status = "success"
+        returned_rows = len(result["rows"])
 
-    print(f"\nReturned {len(result['rows'])} rows.")
+        print("\nQuery Results:")
+        print("-" * 60)
+
+        print(" | ".join(result["columns"]))
+        print("-" * 60)
+
+        for row in result["rows"]:
+            print(" | ".join(str(value) for value in row))
+
+        if result["truncated"]:
+            print("\nOnly the first 100 rows are displayed.")
+
+        print(f"\nReturned {returned_rows} rows.")
+
+        write_audit_log(
+            domain="retail",
+            question=question,
+            strategy=strategy,
+            generated_sql=sql,
+            validation_status=validation_status,
+            execution_status=execution_status,
+            generation_time_ms=generation_time_ms,
+            execution_time_ms=execution_time_ms,
+            returned_rows=returned_rows,
+        )
+
+        return result
+
+    except Exception as error:
+        if validation_status == "not_run" and sql is not None:
+            validation_status = "rejected"
+
+        if validation_status == "passed":
+            execution_status = "failed"
+
+        write_audit_log(
+            domain="retail",
+            question=question,
+            strategy=strategy,
+            generated_sql=sql,
+            validation_status=validation_status,
+            execution_status=execution_status,
+            generation_time_ms=generation_time_ms,
+            execution_time_ms=execution_time_ms,
+            returned_rows=returned_rows,
+            error=f"{type(error).__name__}: {error}",
+        )
+
+        raise
 
 
 def main():
@@ -34,7 +101,9 @@ def main():
     print("=" * 60)
 
     while True:
-        question = input("\nEnter your question (or type 'exit'): ").strip()
+        question = input(
+            "\nEnter your question (or type 'exit'): "
+        ).strip()
 
         if question.lower() == "exit":
             print("Goodbye!")

@@ -106,6 +106,18 @@ Finance strategies:
 
 These controls provide safeguards for this experimental application. They are not a substitute for a complete production security architecture.
 
+### SQL Audit Logging
+
+- Shared audit logger for Retail and Finance workflows.
+- Structured JSON Lines (`.jsonl`) audit records.
+- Records timestamps, domain, user questions, prompt strategies, and generated SQL.
+- Tracks SQL validation and execution outcomes.
+- Records generation time, execution time, returned row count, and errors.
+- Captures successful queries, rejected SQL, execution failures, and generation failures.
+- Local audit logs are excluded from Git through `.gitignore`.
+
+Audit logging is currently a local prototype feature. It does not yet provide sensitive-data redaction, centralized log storage, or role-based access controls.
+
 ### Evaluation and Analysis
 
 - Development and held-out test question sets for Retail.
@@ -153,6 +165,7 @@ nl-to-sql-assistant/
 │
 ├── src/
 │   ├── __init__.py
+│   ├── audit_logger.py
 │   │
 │   ├── Retail Application
 │   │   ├── main.py
@@ -200,6 +213,7 @@ nl-to-sql-assistant/
 │       └── update_order_sensitivity.py
 │
 ├── tests/
+│   └── test_audit_logging.py
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
@@ -427,6 +441,10 @@ The prototype implements several SQL execution safeguards:
 
 These mechanisms reduce the risk of unintended database modifications and uncontrolled queries.
 
+The application also writes structured local audit records to `logs/audit.jsonl`. Records include the domain, question, generated SQL, validation and execution status, timing information, returned row count, and errors. The `logs/` directory is excluded from version control.
+
+Audit logs may contain user questions and generated SQL. Sensitive-data redaction, centralized log management, retention policies, and access controls have not yet been implemented.
+
 However, the project is not production-ready. It does not provide a complete enterprise security model, comprehensive authentication, or deployment-level access control.
 
 The LLM provider is external to the local database. Prompts and relevant schema/business context are sent to the configured provider. Users should not assume that all processing remains on-premises.
@@ -442,15 +460,14 @@ The included databases contain synthetic demonstration data.
 - Exact-result evaluation cannot fully capture semantic equivalence.
 - The current datasets are relatively small and domain-specific.
 - The project is a command-line prototype without a production web interface.
-- The `tests/` directory is reserved for future automated unit and integration tests.
+- Automated audit logging tests currently cover eight Retail and Finance execution scenarios.
 
 ---
 
 ## 12. Future Improvements
 
 - Expand semantic SQL evaluation and equivalence checking.
-- Introduce structured SQL audit logging.
-- Add automated unit and integration tests.
+- Expand automated unit and integration test coverage beyond audit logging.
 - Expand financial domain knowledge and business rules.
 - Add more complex benchmark datasets.
 - Build an interactive demonstration interface.
