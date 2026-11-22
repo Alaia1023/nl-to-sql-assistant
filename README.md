@@ -231,7 +231,7 @@ nl-to-sql-assistant/
 | SQLAlchemy | Database models and database interaction |
 | SQLGlot | SQL parsing and validation |
 | OpenAI Python SDK | LLM API client |
-| Groq | Default LLM API provider |
+| Groq | Default LLM API provider; used for the reported benchmark runs with `openai/gpt-oss-20b` |
 | OpenRouter | Alternative API provider |
 | Pandas | Evaluation result processing |
 | python-dotenv | Environment configuration |
@@ -406,6 +406,46 @@ python -m src.validate_finance_dataset
 ---
 
 ## 9. Evaluation Methodology
+### Benchmark Results
+
+The following results were obtained using `openai/gpt-oss-20b` through the Groq API.
+
+#### Retail Domain
+
+The development set contains 25 questions. Four prompting strategies were compared on the same development set.
+
+| Strategy | Questions | Valid SQL Rate | Execution Success Rate | Execution Accuracy | Avg. Generation Time |
+|---|---:|---:|---:|---:|---:|
+| S0 | 25 | 100% | 100% | 48% | 0.5832 s |
+| S1 | 25 | 100% | 100% | 44% | 2.2272 s |
+| S2 | 25 | 100% | 100% | 76% | 2.5968 s |
+| S3 | 25 | 100% | 100% | 60% | 4.9115 s |
+
+S2 achieved the highest execution accuracy on the development set and was selected for the final held-out evaluation.
+
+The held-out Retail test set contains 15 questions and was not used for prompt development.
+
+| Strategy | Questions | Valid SQL Rate | Execution Success Rate | Execution Accuracy | Avg. Generation Time |
+|---|---:|---:|---:|---:|---:|
+| S2 | 15 | 100% | 100% | 60% | 1.1064 s |
+
+S2 correctly matched the reference results for 9 out of 15 test questions. Although test accuracy was lower than development accuracy, all generated queries passed validation and executed successfully.
+
+#### Finance Domain
+
+The Finance evaluation set contains 15 questions. Two prompting strategies were evaluated.
+
+| Strategy | Questions | Valid SQL Rate | Execution Success Rate | Execution Accuracy | Avg. Generation Time |
+|---|---:|---:|---:|---:|---:|
+| F1 | 15 | 93.33% | 93.33% | 13.33% | 2.6445 s |
+| F2 | 15 | 60% | 60% | 46.67% | 11.5603 s |
+
+F2 achieved higher execution accuracy than F1, but this came with lower SQL validity, lower execution success, and substantially higher generation latency. This illustrates a trade-off between answer accuracy, execution reliability, and response time.
+
+**Interpretation:** These are experimental results on small, domain-specific datasets. They should not be interpreted as evidence of production-level accuracy or generalization to arbitrary databases.
+
+---
+
 
 The evaluation framework measures several aspects of generated SQL:
 

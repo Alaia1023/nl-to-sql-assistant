@@ -1,0 +1,10 @@
+[
+    {
+        "strategy": "S2",
+        "total_questions": 15,
+        "valid_sql_rate": 1.0,
+        "execution_success_rate": 1.0,
+        "execution_accuracy": 0.6,
+        "average_generation_time_seconds": 1.1064
+    }
+]
